@@ -6,6 +6,8 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
@@ -13,6 +15,8 @@ import java.util.concurrent.Semaphore;
 public class SensorServer {
     private static final int PORT = 8080;
     private static final int MAX_CONNECTIONS = 5;
+    private static final DateTimeFormatter TIMESTAMP_FORMAT =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public static void main(String[] args) throws IOException {
         ExecutorService pool = Executors.newFixedThreadPool(MAX_CONNECTIONS);
@@ -40,7 +44,8 @@ public class SensorServer {
     private static void handleClient(Socket client, Semaphore semaphore) {
         try (Socket socket = client;
              BufferedReader in = new BufferedReader(
-                     new InputStreamReader(socket.getInputStream()))) {
+                     new InputStreamReader(socket.getInputStream()));
+             PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
 
             String line;
             while ((line = in.readLine()) != null) {
@@ -62,6 +67,13 @@ public class SensorServer {
                     double value = Double.parseDouble(valueText);
                     System.out.println("Modtaget fra " + socket.getRemoteSocketAddress()
                             + ": " + type + " = " + value);
+
+                    if (isThresholdExceeded(type, value)) {
+                        String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMAT);
+                        String alarmMessage = "[" + timestamp + "] " + type + ": " + value + " -> ALARM!";
+                        System.out.println(alarmMessage);
+                        out.println("ALARM: " + type + ": " + value);
+                    }
                 } catch (NumberFormatException e) {
                     System.out.println("[ERROR] Ugyldig værdi fra " + type + ": " + valueText);
                 }
@@ -71,5 +83,14 @@ public class SensorServer {
         } finally {
             semaphore.release();
         }
+    }
+
+    private static boolean isThresholdExceeded(String type, double value) {
+        return switch (type) {
+            case "TEMP" -> value < -15 || value > 35;
+            case "O2" -> value < 19 || value > 23;
+            case "CO2" -> value > 2000;
+            default -> false;
+        };
     }
 }
