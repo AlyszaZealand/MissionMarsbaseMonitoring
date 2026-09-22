@@ -1,6 +1,8 @@
 package org.example;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.Locale;
@@ -20,7 +22,25 @@ public abstract class SensorClient implements Runnable {
     @Override
     public void run() {
         try (Socket socket = new Socket("localhost", port);
-             PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
+             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+
+            Thread alarmListener = new Thread(() -> {
+                try {
+                    String message;
+                    while ((message = in.readLine()) != null) {
+                        if (message.startsWith("ALARM")) {
+                            System.out.println("[ALARM] " + type + ": " + message);
+                        } else {
+                            System.out.println("[SERVER] " + message);
+                        }
+                    }
+                } catch (IOException e) {
+                    System.out.println("[ERROR] Sensor " + type + " mistede alarmforbindelsen.");
+                }
+            });
+            alarmListener.setDaemon(true);
+            alarmListener.start();
 
             Random random = new Random();
             while (!Thread.currentThread().isInterrupted()) {
@@ -33,7 +53,6 @@ public abstract class SensorClient implements Runnable {
 
         } catch (IOException | InterruptedException e) {
             System.out.println("[ERROR] Sensor " + type + " mistede forbindelsen.");
-            e.printStackTrace();
         }
     }
 }
