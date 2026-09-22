@@ -1,6 +1,8 @@
 package org.example;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -17,6 +19,7 @@ public class SensorServer {
     private static final int MAX_CONNECTIONS = 5;
     private static final DateTimeFormatter TIMESTAMP_FORMAT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final String LOG_FILE = "mars.log";
 
     public static void main(String[] args) throws IOException {
         ExecutorService pool = Executors.newFixedThreadPool(MAX_CONNECTIONS);
@@ -65,14 +68,18 @@ public class SensorServer {
 
                 try {
                     double value = Double.parseDouble(valueText);
-                    System.out.println("Modtaget fra " + socket.getRemoteSocketAddress()
-                            + ": " + type + " = " + value);
+                    String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMAT);
 
                     if (isThresholdExceeded(type, value)) {
-                        String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMAT);
                         String alarmMessage = "[" + timestamp + "] " + type + ": " + value + " -> ALARM!";
                         System.out.println(alarmMessage);
+                        appendToLog(alarmMessage);
                         out.println("ALARM: " + type + ": " + value);
+                    } else {
+                        String normalLogLine = "[" + timestamp + "] " + type + ": " + value;
+                        System.out.println("Modtaget fra " + socket.getRemoteSocketAddress()
+                                + ": " + type + " = " + value);
+                        appendToLog(normalLogLine);
                     }
                 } catch (NumberFormatException e) {
                     System.out.println("[ERROR] Ugyldig værdi fra " + type + ": " + valueText);
@@ -92,5 +99,14 @@ public class SensorServer {
             case "CO2" -> value > 2000;
             default -> false;
         };
+    }
+
+    private static void appendToLog(String message) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(LOG_FILE, true))) {
+            writer.write(message);
+            writer.newLine();
+        } catch (IOException e) {
+            System.out.println("[ERROR] Kunne ikke skrive til logfil: " + e.getMessage());
+        }
     }
 }
