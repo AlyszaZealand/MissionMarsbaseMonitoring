@@ -1,37 +1,38 @@
-# 1. Sensor-klient (Threaded)
-#### Simuler en sensor ved at sende en ny måling hvert 5. sekund 
-#### Brug fx Random til at generere værdier 
-#### Hver klient sender sin type ("TEMP", "O2" osv.) og en værdi som tekst 
-### Eksempel: 
-#### out.println("TEMP:27.4"); 
-#### out.println("CO2:2350"); 
+# AI i README
 
-# 2. Server (med trådpool)
-#### Brug ExecutorService med fx 5 tråde 
-#### For hver klient: læs linje for linje og parse typen + værdi 
-#### Tjek mod grænser og skriv til logfil 
-#### Hvis alarm: skriv alarm i konsol og til klient 
+# en opgave I gav agenten 
+Vi gav korte issues.
 
-# 3. Logning
-#### Brug BufferedWriter med FileWriter("mars.log", true) 
-#### Log hver besked med timestamp og sensor-type 
-### Eksempel:
-#### [2025-07-18 14:32:01] O2: 22.5 
-#### [2025-07-18 14:32:06] CO2: 2100 -> ALARM! 
+# hvorfor opgaven var afgrænset på den måde 
+Jo mindre issue, jo mere fokuseret kunne AI begrænsningen være.
 
-# 4. Fejlhåndtering
-#### Brug try-with-resources til alle streams/sockets 
-#### Fang IOException, NumberFormatException 
-#### Udskriv fejl pænt: "[ERROR] Sensor X mistede forbindelsen." 
+# et forslag eller en ændring fra AI som I accepterede
+Vi accepterede ændringer fordi de issue var så korte og var gode.
 
-# Hjælp og inspiration
-#### Klient: Brug Socket, PrintWriter, Thread.sleep(5000) og Random 
-#### Server: Brug ServerSocket.accept(), BufferedReader, ExecutorService 
-#### Logger: BufferedWriter eller PrintWriter 
+# et forslag eller en ændring som I ændrede eller afviste 
+Vi ændrede 
 
-# Afleveringskrav
-#### Min. 3 sensortyper implementeret (fx TEMP, CO2, O2) 
-#### Trådpool på serveren 
-#### Alarmer og logning virker 
-#### Koden er kommenteret og opdelt i metoder 
-#### ReadME 
+```
+try {
+                    double value = Double.parseDouble(valueText);
+                    String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMAT);
+                    if (isThresholdExceeded(type, value)) {
+                        String alarmMessage = "[" + timestamp + "] " + type + ": " + value + " -> ALARM!";
+                        System.out.println(alarmMessage);
+                        appendToLog(alarmMessage);
+                        out.println("ALARM: " + type + ": " + value);
+                    } else {
+                        String normalLogLine = "[" + timestamp + "] " + type + ": " + value;
+                        System.out.println("Modtaget fra " + socket.getRemoteSocketAddress()
+                                + ": " + type + " = " + value);
+                        appendToLog(normalLogLine);
+                    }
+                } catch (NumberFormatException e) {
+                    System.out.println("[ERROR] Ugyldig værdi fra " + type + ": " + valueText);
+                }
+  ```
+  
+Så Hvis der var alarm, at den ikke skrev den specifikke tærskelværdi med og uden alarm i konsol og log-fil.
+
+# hvordan I testede at AI-genereret kode virkede 
+Vi afprøvede koden inden vi sagde "keep changed", og i vores prompt skrev vi successkriterier. 
